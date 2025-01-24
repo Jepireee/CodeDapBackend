@@ -9,6 +9,28 @@ const router = express.Router();
 const storage = multer.memoryStorage(); // Store files in memory
 const upload = multer({ storage });
 
+// Function to detect the language of the recognized text
+function detectLanguage(code) {
+  const pythonKeywords = ['def', 'import', 'print', 'self', 'lambda', 'async', 'await'];
+  const javaKeywords = ['class', 'public', 'static', 'void', 'new', 'extends', 'implements'];
+  const cppKeywords = ['#include', 'cout', 'cin', 'std', '->', '::', 'template', 'int main'];
+
+
+  if (javaKeywords.some((keyword) => code.includes(keyword))) {
+    return 'Java';
+  }
+
+  if (cppKeywords.some((keyword) => code.includes(keyword))) {
+    return 'C++';
+  }
+
+  if (pythonKeywords.some((keyword) => code.includes(keyword))) {
+    return 'Python';
+  }
+
+  return 'Unknown';
+}
+
 // Endpoint for image upload
 router.post('/', upload.single('image'), async (req, res) => {
   if (!req.file) {
@@ -22,11 +44,15 @@ router.post('/', upload.single('image'), async (req, res) => {
     // Perform OCR on the processed image
     const recognizedText = await performOCR(processedImagePath);
 
-    // Send the recognized text and path of the processed image in the response
+    // Validate the language of the recognized text
+    const detectedLanguage = detectLanguage(recognizedText);
+
+    // Send the recognized text, detected language, and path of the processed image in the response
     res.status(200).send({
       message: 'File uploaded, processed, and text recognized successfully!',
       processedImagePath, // Path of the processed image
       recognizedText, // Recognized text from the image
+      detectedLanguage, // Detected programming language
     });
   } catch (error) {
     console.error('Error processing the image:', error);
